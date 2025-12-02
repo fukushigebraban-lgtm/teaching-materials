@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>国会の地位と仕組み - 学習スライド</title>
+    <style>
+        /* --- Reset & Base --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #1a1a1a; /* 余白は暗い色 */
+            font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+            overflow: hidden; /* スクロール禁止 */
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        /* --- Slide Container (Fixed 16:9 Base: 1920x1080) --- */
+        #slide-stage {
+            width: 1920px;
+            height: 1080px;
+            background-color: #fcfcfc;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            /* Scaling handled by JS */
+            transform-origin: center center;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-size: 5rem;
+            color: #2c3e50;
+            line-height: 1.2;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 3.2rem;
+            color: #fff;
+            background-color: #2c3e50; /* Base Theme Color: Navy */
+            padding: 1rem 2rem;
+            margin-bottom: 2rem;
+            border-left: 15px solid #f1c40f; /* Accent: Gold */
+        }
+
+        h3 {
+            font-size: 2rem;
+            color: #2980b9;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        p, li {
+            font-size: 1.6rem;
+            line-height: 1.8;
+            color: #444;
+            margin-bottom: 1rem;
+        }
+
+        strong {
+            color: #c0392b; /* Important terms: Red-ish */
+            background: linear-gradient(transparent 70%, #ffecb3 70%); /* Marker style */
+            padding: 0 4px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 1rem;
+        }
+
+        li::before {
+            content: "■";
+            color: #2980b9;
+            font-size: 1.2rem;
+            margin-right: 0.8rem;
+            vertical-align: middle;
+        }
+
+        /* --- Layout Utils --- */
+        .slide {
+            width: 100%;
+            height: 100%;
+            padding: 3rem 4rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            z-index: 10;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            gap: 3rem;
+        }
+
+        .col-1 { flex: 1; }
+        .col-2 { flex: 2; }
+        .col-half { flex: 1; }
+        
+        .v-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* --- Components --- */
+        .card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .img-placeholder {
+            background-color: #edf2f7;
+            border: 3px dashed #cbd5e0;
+            color: #4a5568;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 1rem;
+            min-height: 150px;
+            border-radius: 8px;
+            margin-top: 1rem;
+            position: relative;
+        }
+        
+        .img-placeholder::after {
+            content: "ここに図版を配置";
+            display: block;
+            font-size: 0.9rem;
+            color: #a0aec0;
+            position: absolute;
+            bottom: 5px;
+        }
+
+        /* --- Navigation & UI --- */
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            font-size: 1.5rem;
+            color: #7f8c8d;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 8px;
+            background-color: #f1c40f;
+            width: 0%;
+            transition: width 0.3s ease;
+            z-index: 100;
+        }
+
+        .help-text {
+            position: absolute;
+            bottom: 20px;
+            left: 40px;
+            font-size: 1rem;
+            color: #bdc3c7;
+        }
+
+        /* --- Specific Slide Styles --- */
+        
+        /* Title Slide */
+        .slide-title {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .slide-title h1 { margin-bottom: 1rem; }
+        .slide-title h2 { 
+            background: none; 
+            color: #2c3e50; 
+            border: none; 
+            font-size: 2.5rem; 
+            margin-bottom: 3rem;
+        }
+        .subject-tag {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 1.5rem;
+        }
+
+        /* Three Powers Diagram */
+        .power-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .power-box {
+            text-align: center;
+            padding: 2rem;
+            background: #fff;
+            border-top: 8px solid #3498db;
+        }
+        .power-box h4 { font-size: 2rem; margin-bottom: 1rem; color: #2c3e50; }
+        .power-box p { font-size: 1.4rem; }
+        .power-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+
+    </style>
+</head>
+<body>
+
+    <div id="slide-stage">
+        
+        <!-- Slide 1: Title -->
+        <div class="slide slide-title active">
+            <span class="subject-tag">中学3年 社会科 公民</span>
+            <h1>国会の地位と仕組み</h1>
+            <h2>民主主義を支える仕組みを理解しよう</h2>
+            <p>※矢印キーまたはクリックで進む ／ Fキーで全画面</p>
+        </div>
+
+        <!-- Slide 2: 国会の地位 -->
+        <div class="slide">
+            <h2>国会の地位と三権分立</h2>
+            <div class="content-area">
+                <div class="col-1 v-stack">
+                    <div class="card">
+                        <span class="card-title">国会の重要な地位</span>
+                        <ul>
+                            <li><strong>国権の最高機関</strong>：主権者である国民が直接選んだ議員で組織されるため。</li>
+                            <li><strong>唯一の立法機関</strong>：国会以外のどの機関も法律を定めることはできない。</li>
+                        </ul>
+                    </div>
+                    <div style="margin-top:auto;">
+                        <p>私たちの生活に関する重要な問題の話し合い（審議）が行われ、決められる場所です。</p>
+                    </div>
+                </div>
+                
+                <div class="col-2">
+                    <h3>三権の分立と役割</h3>
+                    <div class="power-grid">
+                        <div class="power-box" style="border-color: #e74c3c;">
+                            <span class="power-icon">🏛️</span>
+                            <h4>立法権</h4>
+                            <p><strong>国会</strong><br>法律を定める</p>
+                        </div>
+                        <div class="power-box" style="border-color: #2ecc71;">
+                            <span class="power-icon">👔</span>
+                            <h4>行政権</h4>
+                            <p><strong>内閣</strong><br>法律を実行する</p>
+                        </div>
+                        <div class="power-box" style="border-color: #9b59b6;">
+                            <span class="power-icon">⚖️</span>
+                            <h4>司法権</h4>
+                            <p><strong>裁判所</strong><br>争いを解決する</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: 国会議員の地位と特権 -->
+        <div class="slide">
+            <h2>国会議員の地位と特権</h2>
+            <div class="content-area">
+                <div class="col-half v-stack">
+                    <div class="card">
+                        <span class="card-title">国民全体の代表</span>
+                        <p>18歳以上の全国民が投票できる選挙で選ばれます。</p>
+                        <p>特定の地域や支持者だけでなく、<strong>国民全体のために</strong>活動することが求められます。</p>
+                    </div>
+                    <div class="img-placeholder" style="flex:1;">
+                        ［図1：❶国会議員のある一週間］<br>
+                        ［図2：❷衆議院議員の議員バッジ］
+                    </div>
+                </div>
+                <div class="col-half v-stack">
+                    <h3>活動を保障する３つの特権</h3>
+                    <ul>
+                        <li><strong>歳費</strong>（さいひ）：<br>議員活動に専念できるよう、国から支払われる給料。</li>
+                        <li><strong>不逮捕特権</strong>：<br>国会開会中は、原則として逮捕されない。</li>
+                        <li><strong>免責特権</strong>：<br>院内での演説や表決について、院外で責任を問われない。</li>
+                    </ul>
+                    <div class="img-placeholder" style="height: 180px;">
+                        ［図4：❹国会議員のさまざまな権利］
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: 二院制の仕組み -->
+        <div class="slide">
+            <h2>二院制（衆議院と参議院）</h2>
+            <div class="content-area">
+                <div class="col-1 v-stack">
+                    <p>国会は<strong>二院制（両院制）</strong>を採用しています。</p>
+                    <div class="card">
+                        <span class="card-title">二院制のメリット</span>
+                        <ul>
+                            <li>国民の意見をより広く国会に届ける。</li>
+                            <li><strong>慎重な審議</strong>を行い、一方の行きすぎを防ぐ。</li>
+                        </ul>
+                    </div>
+                    <p style="font-size: 1.4rem;">両院の決定（議決）が一致すると、国会の議決となります。</p>
+                    <div class="img-placeholder">
+                         ［図9：❾衆議院と参議院の比較］
+                    </div>
+                </div>
+                <div class="col-1 v-stack">
+                    <div class="img-placeholder" style="flex:1;">
+                        ［図7：❼国会議事堂］<br>
+                        ［図5：❺衆議院本会議場］<br>
+                        ［図6：❻参議院本会議場］
+                    </div>
+                    <div class="img-placeholder" style="height:100px; font-size:1rem;">
+                        ［図8：❽銅像のない台座（政治に完成はない）］
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: 国会の種類 -->
+        <div class="slide">
+            <h2>国会の種類</h2>
+            <div class="content-area" style="flex-direction: column;">
+                <p>開催時期や目的に応じて、主に3つの種類があります。</p>
+                
+                <div style="display: flex; gap: 2rem; flex: 1;">
+                    <div class="card col-1" style="border-top: 6px solid #e67e22;">
+                        <h3 style="border:none; color:#d35400;">常会（通常国会）</h3>
+                        <ul>
+                            <li>毎年1月に召集</li>
+                            <li>会期は150日間</li>
+                            <li>次年度予算の審議などが中心</li>
+                        </ul>
+                    </div>
+                    <div class="card col-1" style="border-top: 6px solid #27ae60;">
+                        <h3 style="border:none; color:#27ae60;">臨時会（臨時国会）</h3>
+                        <ul>
+                            <li>必要に応じて開かれる</li>
+                            <li>内閣、またはいずれかの議院の総議員の4分の1以上の要求があった場合など</li>
+                        </ul>
+                    </div>
+                    <div class="card col-1" style="border-top: 6px solid #8e44ad;">
+                        <h3 style="border:none; color:#8e44ad;">特別会（特別国会）</h3>
+                        <ul>
+                            <li><strong>衆議院の解散・総選挙の後</strong>に開かれる</li>
+                            <li>内閣総理大臣の指名が行われる</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 2rem; margin-top: 1rem; align-items: stretch;">
+                    <div class="card" style="flex: 2; background-color: #fcfcfc;">
+                        <strong>参議院の緊急集会</strong>：衆議院の解散中に緊急事態が起きた場合、参議院のみで開かれる。
+                    </div>
+                    <div class="img-placeholder" style="flex: 3; margin:0; min-height: 80px;">
+                        ［図3：❸国会の1年の動き］ ［図10：❿国会の種類］
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation UI -->
+        <div class="progress-bar" id="progress"></div>
+        <div class="controls">
+            <span id="page-indicator">1 / 5</span>
+        </div>
+        <div class="help-text">Click or Arrow Keys to Navigate</div>
+
+    </div>
+
+    <script>
+        // --- Slide Logic ---
+        const slides = document.querySelectorAll('.slide');
+        const progressBar = document.getElementById('progress');
+        const pageIndicator = document.getElementById('page-indicator');
+        const stage = document.getElementById('slide-stage');
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active');
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                }
+            });
+            
+            // Update Progress
+            const progress = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = `${progress}%`;
+            
+            // Update Number
+            pageIndicator.textContent = `${currentSlide + 1} / ${totalSlides}`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // --- Scaling Logic for 16:9 Preservation ---
+        function resizeStage() {
+            const windowW = window.innerWidth;
+            const windowH = window.innerHeight;
+            const stageW = 1920;
+            const stageH = 1080;
+
+            const scale = Math.min(windowW / stageW, windowH / stageH);
+            
+            stage.style.transform = `scale(${scale})`;
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', resizeStage);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (e.key.toLowerCase() === 'f') {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            // Simple click to advance, strictly right half vs left half could be added,
+            // but for simplicity, click anywhere advances, context menu or headers excluded if needed.
+            // Let's implement standard presentation click: Click = Next.
+            nextSlide();
+        });
+
+        // Initialize
+        resizeStage();
+        updateSlide();
+
+    </script>
+</body>
+</html>
